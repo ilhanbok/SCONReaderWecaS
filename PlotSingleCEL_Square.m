@@ -1,6 +1,6 @@
 % Script to plot a single WeCas .CEL file, assuming known format
 % Ilhan Bok, Hai Lab, 2022
-function [] = PlotSingleCEL(target_file, SCON_ref)
+function [] = PlotSingleCEL_Square(target_file, SCON_ref)
     % REad the refernce scon and save displacement
     fid = fopen(SCON_ref);
     tline = fgetl(fid);
@@ -28,8 +28,8 @@ function [] = PlotSingleCEL(target_file, SCON_ref)
     tline = fgetl(fid);
     
     l = 0;
-    seen_dz = 0;
-    dz = 0;
+    seen_ps = 0;
+    ps = 0;
     prev_x = [];
     prev_y = [];
     x = [];
@@ -40,22 +40,18 @@ function [] = PlotSingleCEL(target_file, SCON_ref)
         end
         tline = fgetl(fid);
         l  = l+1;
-        if seen_dz
+        if seen_ps
             try
-                dz = contains(tline,'DZ');
-                s1 = erase(tline,'DZ');
-                s2 = erase(s1,'TL');
-                s3 = erase(s2,' ');
-                cpairs = strsplit(s3,';');
-                c1 = cpairs{1};
-                c2 = cpairs{2};
-                c1s = strsplit(c1,',');
-                c2s = strsplit(c2,',');
+                ps = contains(tline,'PS');
+                cpairs = strsplit(tline,'; TL');
+                s1 = cpairs{2};
+                s1 = erase(s1,';');
+                c1s = strsplit(s1,',');
                 x(end+1) = str2double(c1s{1})+dx;
-                x(end+1) = str2double(c2s{1})+dx;
+                x(end+1) = str2double(c1s{1})+0.0002+dx;
                 y(end+1) = str2double(c1s{2})+dy;
-                y(end+1) = str2double(c2s{2})+dy;
-                if dz % plot previous points, push new stack
+                y(end+1) = str2double(c1s{2})+0.0002+dy;
+                if ps % plot previous points, push new stack
                     % ... only if further than buffer distance
                     if norm([mean(prev_x) mean(prev_y)] - [mean(x) mean(y)]) > bd ...
                             || (isempty(prev_x) && isempty(prev_y))
@@ -67,13 +63,15 @@ function [] = PlotSingleCEL(target_file, SCON_ref)
                         y = [];
                     end
                 end
+                if (mod(l,100) == 0)
+                    %pause
+                end
             catch e % looks like this line is not formatted.
                 continue
             end
         else
-            seen_dz = contains(tline,'DZ');
+            seen_ps = contains(tline,'PS');
         end
     end
     fclose(fid);
-    saveas(gcf,[target_file '.png']);
 end
